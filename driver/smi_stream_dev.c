@@ -63,6 +63,7 @@
 #include <linux/wait.h>
 #include <linux/poll.h>
 #include <linux/init.h>
+#include <linux/version.h>
 
 #include "smi_stream_dev.h"
 
@@ -1052,7 +1053,11 @@ static int smi_stream_dev_probe(struct platform_device *pdev)
     }
 
     // Create sysfs entries with "smi-stream-dev"
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 4, 0)
+    smi_stream_class = class_create(DEVICE_NAME);
+#else
     smi_stream_class = class_create(THIS_MODULE, DEVICE_NAME);
+#endif
     ptr_err = smi_stream_class;
     if (IS_ERR(ptr_err))
     {
