@@ -50,6 +50,7 @@
 #include <linux/of.h>
 #include <linux/platform_device.h>
 #include <linux/slab.h>
+#include <linux/vmalloc.h>
 #include <linux/mm.h>
 #include <linux/pagemap.h>
 #include <linux/fs.h>
@@ -125,9 +126,10 @@ ssize_t stream_smi_user_dma(struct bcm2835_smi_instance *inst,
 
 int transfer_thread_init(struct bcm2835_smi_dev_instance *inst, enum dma_transfer_direction dir,dma_async_tx_callback callback);
 static void stream_smi_read_dma_callback(void *param);
-static void stream_smi_write_dma_callback(void *param);
+static void __maybe_unused stream_smi_write_dma_callback(void *param);
 void transfer_thread_stop(struct bcm2835_smi_dev_instance *inst);
 void print_smil_registers(void);
+static void print_smil_registers_ext(const char *b);
 
 
 static struct bcm2835_smi_dev_instance *inst = NULL;
@@ -174,7 +176,7 @@ void print_smil_registers()
 }
 
 /***************************************************************************/
-void print_smil_registers_ext(const char* b)
+static void print_smil_registers_ext(const char* b)
 {
     struct bcm2835_smi_instance *smi_inst = inst->smi_inst;
     unsigned int smics = read_smi_reg(smi_inst, SMICS);
@@ -640,7 +642,7 @@ static void stream_smi_check_and_restart(struct bcm2835_smi_dev_instance *inst)
 }
 
 /***************************************************************************/
-static void stream_smi_write_dma_callback(void *param)
+static void __maybe_unused stream_smi_write_dma_callback(void *param)
 {
     /* Notify the bottom half that a chunk is ready for user copy */
     struct bcm2835_smi_dev_instance *inst = (struct bcm2835_smi_dev_instance *)param;
@@ -1102,8 +1104,9 @@ static int smi_stream_dev_probe(struct platform_device *pdev)
 *
 ***************************************************************************/
 
-static int smi_stream_dev_remove(struct platform_device *pdev)
+static void smi_stream_dev_remove(struct platform_device *pdev)
 {
+    (void)pdev;
     //if (inst->reader_thread != NULL) kthread_stop(inst->reader_thread);
     //inst->reader_thread = NULL;	
     
@@ -1113,7 +1116,6 @@ static int smi_stream_dev_remove(struct platform_device *pdev)
     unregister_chrdev_region(smi_stream_devid, 1);
 
     dev_info(inst->dev, DRIVER_NAME": smi-stream dev removed");
-    return 0;
 }
 
 /****************************************************************************
